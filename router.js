@@ -13,9 +13,6 @@ const _queue$ = new Subject({});
 async function processData(data) {
   let _datas = await Queue.find();
   let _data = _datas[_datas.length - 1];
-  let request = data;
-  let results = [];
-
   let _res;
 
   if (!_data) {
@@ -30,20 +27,11 @@ async function processData(data) {
     }).save();
   }
 
-  results.push(_res);
-
-  while (request.length > 0) {
-    request.shift();
-    _queue$.next(request);
-  }
-
-  return results;
+  return
 }
 
 _queue$
-  .do(x => console.log('Before', x))
   .concatMap((x) => processData(x))
-  .do(x => console.log('after', x))
   .subscribe({
     next: () => console.log("queue_processing"),
     error: err => console.log("err", err.message),
@@ -51,8 +39,10 @@ _queue$
   });
 
 router.post('/test', (req, res) => {
-  console.log("d", req.body.datas);
-  _queue$.next(req.body.datas);
+  const data = req.body.datas;
+  while (data.length > 0) {
+    _queue$.next(data.shift());
+  }
   return res.status(201).json({
     status: "ok"
   });
